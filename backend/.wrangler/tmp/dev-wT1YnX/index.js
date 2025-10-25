@@ -261,6 +261,169 @@ async function handleProducts(request, env) {
 }
 __name(handleProducts, "handleProducts");
 
+// src/routes/notices.js
+async function requireAdmin2(request, env) {
+  const h = request.headers.get("Authorization") || "";
+  const pass = request.headers.get("x-admin-password") || "";
+  const ok = h === `Bearer ${env.ADMIN_PASSWORD}` || pass === env.ADMIN_PASSWORD;
+  if (!ok)
+    throw new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+}
+__name(requireAdmin2, "requireAdmin");
+async function handleNotices(request, env) {
+  const url = new URL(request.url);
+  const path = url.pathname;
+  if (request.method === "GET" && path === "/api/notices") {
+    const page = Math.max(parseInt(url.searchParams.get("page") || "1", 10), 1);
+    const size = Math.min(parseInt(url.searchParams.get("page_size") || "10", 10), 50);
+    const start = (page - 1) * size;
+    const end = start + size - 1;
+    const sort = (url.searchParams.get("sort") || "newest").toLowerCase();
+    let order;
+    switch (sort) {
+      case "viewed":
+        order = "views.desc";
+        break;
+      case "updated":
+        order = "updated_at.desc";
+        break;
+      case "best":
+        order = "likes.desc";
+        break;
+      default:
+        order = "published_at.desc";
+        break;
+    }
+    const q = url.searchParams.get("q");
+    const target = (url.searchParams.get("target") || "all").toLowerCase();
+    const filters = [];
+    if (q) {
+      const like = `*${q.replace(/\*/g, "")}*`;
+      if (target === "title") {
+        filters.push(`title=ilike.${encodeURIComponent(like)}`);
+      } else if (target === "content") {
+        filters.push(`content_html=ilike.${encodeURIComponent(like)}`);
+      } else if (target === "author") {
+        filters.push(`author=ilike.${encodeURIComponent(like)}`);
+      } else {
+        filters.push(
+          `or=(title.ilike.${encodeURIComponent(like)},content_html.ilike.${encodeURIComponent(like)},author.ilike.${encodeURIComponent(like)})`
+        );
+      }
+    }
+    const qs = filters.length ? `&${filters.join("&")}` : "";
+    const endpoint = `${env.SUPABASE_URL}/rest/v1/notice_posts?select=*&order=${order}${qs}`;
+    const res = await fetch(endpoint, {
+      headers: {
+        apikey: env.SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_KEY}`,
+        Prefer: "count=exact",
+        Range: `${start}-${end}`
+      }
+    });
+    const text = await res.text();
+    const items = text ? JSON.parse(text) : [];
+    const cr = res.headers.get("content-range");
+    let total = 0;
+    if (cr) {
+      const m2 = cr.match(/\/(\d+)$/);
+      if (m2)
+        total = parseInt(m2[1], 10);
+    }
+    return new Response(JSON.stringify({ items, total, page, page_size: size }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    });
+  }
+  const m = path.match(/^\/api\/notices\/(\d+)$/);
+  if (request.method === "GET" && m) {
+    const id = m[1];
+    const withInc = url.searchParams.get("inc") === "1";
+    let row;
+    if (withInc) {
+      const r = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/notice_inc_view`, {
+        method: "POST",
+        headers: {
+          apikey: env.SUPABASE_SERVICE_KEY,
+          Authorization: `Bearer ${env.SUPABASE_SERVICE_KEY}`,
+          "Content-Type": "application/json",
+          Prefer: "return=representation"
+        },
+        body: JSON.stringify({ p_id: Number(id) })
+      });
+      if (r.ok) {
+        const arr = JSON.parse(await r.text());
+        row = arr;
+      }
+    }
+    if (!row) {
+      const r = await fetch(`${env.SUPABASE_URL}/rest/v1/notice_posts?id=eq.${id}&select=*`, {
+        headers: { apikey: env.SUPABASE_SERVICE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_KEY}` }
+      });
+      const arr = JSON.parse(await r.text());
+      row = arr && arr[0];
+    }
+    if (!row)
+      return new Response(JSON.stringify({ error: "Not Found" }), { status: 404 });
+    return new Response(JSON.stringify(row), { status: 200, headers: { "Content-Type": "application/json" } });
+  }
+  if (request.method === "POST" && path === "/api/notices") {
+    await requireAdmin2(request, env);
+    const body = await request.json();
+    const res = await fetch(`${env.SUPABASE_URL}/rest/v1/notice_posts`, {
+      method: "POST",
+      headers: {
+        apikey: env.SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "return=representation"
+      },
+      body: JSON.stringify({
+        title: body.title,
+        author: body.author || "Zestco",
+        content_html: body.content_html || "",
+        published_at: body.published_at || (/* @__PURE__ */ new Date()).toISOString()
+      })
+    });
+    return new Response(await res.text(), { status: res.status, headers: { "Content-Type": "application/json" } });
+  }
+  if ((request.method === "PUT" || request.method === "PATCH") && m) {
+    await requireAdmin2(request, env);
+    const id = m[1];
+    const body = await request.json();
+    const res = await fetch(`${env.SUPABASE_URL}/rest/v1/notice_posts?id=eq.${id}`, {
+      method: "PATCH",
+      headers: {
+        apikey: env.SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "return=representation"
+      },
+      body: JSON.stringify({
+        title: body.title,
+        author: body.author,
+        content_html: body.content_html,
+        published_at: body.published_at
+      })
+    });
+    return new Response(await res.text(), { status: res.status, headers: { "Content-Type": "application/json" } });
+  }
+  if (request.method === "DELETE" && m) {
+    await requireAdmin2(request, env);
+    const id = m[1];
+    const res = await fetch(`${env.SUPABASE_URL}/rest/v1/notice_posts?id=eq.${id}`, {
+      method: "DELETE",
+      headers: {
+        apikey: env.SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_KEY}`
+      }
+    });
+    return new Response(null, { status: res.ok ? 204 : res.status });
+  }
+  return new Response("Not Found", { status: 404 });
+}
+__name(handleNotices, "handleNotices");
+
 // src/index.js
 var src_default = {
   async fetch(request, env) {
@@ -268,31 +431,45 @@ var src_default = {
     if (pf)
       return pf;
     const url = new URL(request.url);
-    if (url.pathname === "/" && request.method === "GET") {
-      return withCORS(new Response(JSON.stringify({ ok: true, routes: ["/api/content", "/api/products"] }), {
-        headers: { "Content-Type": "application/json" }
-      }));
+    const path = url.pathname;
+    const method = request.method;
+    if (path === "/" && method === "GET") {
+      return withCORS(
+        new Response(
+          JSON.stringify({
+            ok: true,
+            routes: ["/api/content", "/api/products", "/api/notices"]
+          }),
+          { headers: { "Content-Type": "application/json" } }
+        )
+      );
     }
-    if (url.pathname === "/api/content" && request.method === "GET") {
+    if (path === "/api/content" && method === "GET") {
       return withCORS(await handleContent(request, env));
     }
-    if (url.pathname.startsWith("/api/content") && ["PUT", "PATCH", "DELETE"].includes(request.method)) {
+    if (path.startsWith("/api/content") && ["PUT", "PATCH", "DELETE"].includes(method)) {
       const auth = await requireAdmin(request, env);
       if (!auth.ok)
         return withCORS(new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 }));
       return withCORS(await handleContent(request, env));
     }
-    if (url.pathname === "/api/products" && request.method === "GET") {
+    if (path === "/api/products" && method === "GET" || /^\/api\/products\/\d+$/.test(path) && method === "GET") {
       return withCORS(await handleProducts(request, env));
     }
-    if (/^\/api\/products\/\d+$/.test(url.pathname) && request.method === "GET") {
-      return withCORS(await handleProducts(request, env));
-    }
-    if (url.pathname.startsWith("/api/products") && ["POST", "PUT", "DELETE"].includes(request.method)) {
+    if (path.startsWith("/api/products") && ["POST", "PUT", "DELETE"].includes(method)) {
       const auth = await requireAdmin(request, env);
       if (!auth.ok)
         return withCORS(new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 }));
       return withCORS(await handleProducts(request, env));
+    }
+    if (path === "/api/notices" && method === "GET" || /^\/api\/notices\/\d+$/.test(path) && method === "GET") {
+      return withCORS(await handleNotices(request, env));
+    }
+    if (path.startsWith("/api/notices") && ["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
+      const auth = await requireAdmin(request, env);
+      if (!auth.ok)
+        return withCORS(new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 }));
+      return withCORS(await handleNotices(request, env));
     }
     return withCORS(new Response("Not Found", { status: 404 }));
   }
