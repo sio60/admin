@@ -1,41 +1,46 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
+import { adminVerify, adminLogin } from '../routes/admin-auth'
 
-const Ctx = createContext(null)
-export const useServerAdmin = () => useContext(Ctx)
+const AdminCtx = createContext(null)
 
 export function ServerAdminProvider({ children }) {
-  const [admin, setAdmin] = useState(false)
+  const [token, setToken] = useState(() => localStorage.getItem('adm_tk') || '')
+  const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
 
-  async function refresh() {
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_BASE || ''}/auth/admin/me`, {
-        credentials: 'include'
-      })
-      const j = await res.json()
-      setAdmin(!!j.admin)
-    } finally { setLoading(false) }
-  }
-  useEffect(()=>{ refresh() }, [])
+  useEffect(() => {
+    let alive = true
+    ;(async () => {
+      if (!token) { if (alive) { setIsAdmin(false); setLoading(false) } ; return }
+      const ok = await adminVerify(token)
+      if (!alive) return
+      setIsAdmin(ok)
+      if (!ok) { localStorage.removeItem('adm_tk'); setToken('') }
+      setLoading(false)
+    })()
+    return () => { alive = false }
+  }, [token])
 
-  async function login(password) {
-    const res = await fetch(`${import.meta.env.VITE_API_BASE || ''}/auth/admin/login`, {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json' },
-      credentials:'include',
-      body: JSON.stringify({ password })
-    })
-    const j = await res.json()
-    if (j.ok) { await refresh(); return true }
-    return false
-  }
-
-  async function logout() {
-    await fetch(`${import.meta.env.VITE_API_BASE || ''}/auth/admin/logout`, {
-      method:'POST', credentials:'include'
-    })
-    setAdmin(false)
+  async function loginWithPassword(password) {
+    const data = await adminLogin(password)
+    if (!data?.token) return false
+    localStorage.setItem('adm_tk', data.token)
+    setToken(data.token)
+    setIsAdmin(true)
+    return true
   }
 
-  return <Ctx.Provider value={{ admin, loading, login, logout }}>{children}</Ctx.Provider>
+  function logout() {
+    localStorage.removeItem('adm_tk')
+    setToken('')
+    setIsAdmin(false)
+  }
+
+  return (
+    <AdminCtx.Provider value={{ token, isAdmin, loading, loginWithPassword, logout }}>
+      {children}
+    </AdminCtx.Provider>
+  )
 }
+
+export const useServerAdmin = () => useContext(AdminCtx)

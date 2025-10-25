@@ -23,7 +23,8 @@ export default function App() {
       <ServerAdminProvider>
         <EditModeProvider>
           <Routes>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<Home />} />         
+            <Route path="/about" element={<About />} />   
             <Route path="/brand" element={<Brand />} />
             <Route path="/products" element={<Products />} />
             <Route path="/where" element={<WhereToBuy />} />
