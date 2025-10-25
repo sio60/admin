@@ -2,15 +2,15 @@ import React from 'react'
 import Layout from '../components/Layout'
 import Carousel from '../components/Carousel'
 import EditableText from '../components/EditableText'
-import CircleGallery from '../components/CircleGallery'
+import TripleCircleSlider from '../components/TripleCircleSlider'
 
 export default function Home() {
-  const slides = Array.from({ length: 7 }, (_, i) => `/slide/slide${i+1}.png`)
+  const slides = Array.from({ length: 7 }, (_, i) => `/slide/slide${i + 1}.png`)
 
   return (
     <Layout title={null} noChrome>
       <section className="home-hero">
-        <Carousel images={slides} interval={4500} aspect={24/9} />
+        <Carousel images={slides} interval={4500} aspect={24 / 9} />
         <h2 className="home-title">
           <EditableText blockKey="home.title" tag="span" placeholder="메인 타이틀" />
         </h2>
@@ -19,8 +19,8 @@ export default function Home() {
         </p>
       </section>
 
-      {/* ▼ 슬라이드 아래 원형 갤러리 */}
-      <CircleGallery />
+      {/* 원형 3연 슬라이더 (c1/c2/c3) */}
+      <TripleCircleSlider counts={{ c1: 4, c2: 4, c3: 5 }} />
     </Layout>
   )
 }

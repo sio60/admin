@@ -10,49 +10,58 @@
   gap:12px;
 }
 
-/* 홈에서는 카드 테두리/배경 제거한 컨테이너 사용 */
+/* 카드 크롬 제거 */
 .page-body.no-chrome{ border:0; border-radius:0; padding:0; background:transparent; }
 
-/* 슬라이더의 상하 그라데이션을 홈에서는 끔(경계 느낌 제거) */
+/* ✅ 홈에서는 Carousel 배경/그라데이션 제거 + 라운드 클립 유지(래퍼 기준) */
+.page-body.no-chrome .carousel-clip{ border-radius:20px; overflow:hidden; background:transparent; }
+.page-body.no-chrome .carousel{ background:transparent; }
 .page-body.no-chrome .carousel::before,
 .page-body.no-chrome .carousel::after{ display:none; content:none; }
 
-/* ===== Circle gallery under the slider ===== */
-.circle-section { margin: 18px 0 8px; }
+/* ===== Triple circle slider (원형만 노출) ===== */
+.triple-section{ margin:18px 0 8px; }
+.triple-grid{
+  display:grid;
+  grid-template-columns:repeat(3, minmax(160px, 1fr));
+  gap:22px;
+  align-items:center;
+  justify-items:center;
+}
 
-.circle-card{
+/* Circle slider */
+.circle-slider{
+  width:220px; aspect-ratio:1/1; border-radius:50%; overflow:hidden;
+  position:relative; background:#fff;
+  box-shadow:0 2px 10px rgba(0,0,0,.08), inset 0 0 0 1px rgba(0,0,0,.05);
+  transition:transform .15s ease, box-shadow .15s ease;
+}
+.circle-slider:hover{
+  transform:translateY(-2px);
+  box-shadow:0 8px 22px rgba(0,0,0,.12), inset 0 0 0 1px rgba(255,255,255,.6);
+}
+.circle-slider .track{
+  position:absolute; inset:0; display:flex;
+  transition:transform .5s cubic-bezier(.22,.61,.36,1);
+}
+.circle-slider .slide{ flex:0 0 100%; position:relative; }
+
+/* 이미지 여백을 주어 잘림 방지 */
+.circle-slider img{
+  position:absolute;
+  width:86%; height:86%;
+  left:7%; top:7%;
+  object-fit:contain; object-position:center;
   background:#fff;
-  border-radius:16px;
-  box-shadow: 0 10px 28px rgba(0,0,0,.06); /* 은은한 입체감 */
-  padding:18px 16px;
+  user-select:none; -webkit-user-drag:none;
 }
 
-.circle-row{
-  display:flex; flex-wrap:wrap;
-  gap:14px; justify-content:center;
-  margin: 6px 0;
+/* 반응형 */
+@media (max-width:920px){
+  .triple-grid{ grid-template-columns:repeat(3, 1fr); gap:16px; }
+  .circle-slider{ width:180px; }
 }
-
-.circle{
-  width:110px; aspect-ratio:1/1;
-  border-radius:50%;
-  overflow:hidden;
-  background:#fff;
-  border:1px solid rgba(0,0,0,.04);
-  box-shadow: 0 2px 10px rgba(0,0,0,.08);
-  transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
-}
-.circle img{
-  width:100%; height:100%; object-fit:cover; display:block;
-}
-.circle:hover{
-  transform: translateY(-2px);
-  box-shadow: 0 8px 22px rgba(0,0,0,.12);
-  filter: saturate(1.06);
-}
-
-@media (max-width: 640px){
-  .circle{ width:80px; }
-  .circle-card{ padding:14px; }
-  .circle-row{ gap:10px; }
+@media (max-width:640px){
+  .triple-grid{ grid-template-columns:repeat(1, minmax(220px, 1fr)); }
+  .circle-slider{ width:220px; }
 }

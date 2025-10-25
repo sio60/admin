@@ -1,8 +1,23 @@
-/* ===== Carousel (brand skin) ===== */
-.carousel{
-  position:relative; width:100%; overflow:hidden;
-  border-radius:12px; background:#000;
+/* ===== Carousel (with clipping wrapper) ===== */
+
+/* ✅ 라운드/클리핑 전용 래퍼 */
+.carousel-clip{
+  position: relative;
+  border-radius: 20px;          /* 원하는 반경 */
+  overflow: hidden;             /* 핵심: 트랙을 잘라냄 */
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
+          mask-image: radial-gradient(white, black);
 }
+.carousel-clip.square{ border-radius:0; }
+
+/* 본체 */
+.carousel{
+  position: relative;
+  width: 100%;
+  /* 높이는 padding-top로 비율 유지 (JS에서 aspect로 제어) */
+}
+
+/* 트랙/슬라이드 */
 .carousel-track{
   position:absolute; inset:0; display:flex;
   transition:transform .5s cubic-bezier(.22,.61,.36,1);
@@ -14,7 +29,7 @@
   user-select:none; -webkit-user-drag:none;
 }
 
-/* 상/하 그라데이션 – 필요 없으면 home.css에서 끔 */
+/* 상/하 그라데이션 (홈에서 비활성화 가능) */
 .carousel::before,
 .carousel::after{
   content:""; position:absolute; left:0; right:0; height:80px; z-index:1; pointer-events:none;
@@ -22,7 +37,7 @@
 .carousel::before{ top:0;    background:linear-gradient(to bottom, rgba(0,0,0,.18), transparent); }
 .carousel::after { bottom:0; background:linear-gradient(to top,    rgba(0,0,0,.18), transparent); }
 
-/* ── Sleek Chevron Arrows ─────────────────────────────────────────── */
+/* ── Sleek Chevron Arrows ─────────────────────────── */
 .carousel-arrow{
   position:absolute; top:50%; transform:translateY(-50%);
   width:42px; height:42px;
@@ -34,7 +49,7 @@
   display:grid; place-items:center;
   cursor:pointer; z-index:2;
   transition: transform .12s ease, box-shadow .12s ease, background .12s ease, border-color .12s ease;
-  font-size:0; /* 버튼에 텍스트(<,>)가 남아 있어도 숨김 */
+  font-size:0;
 }
 .carousel-arrow.left  { left:12px; }
 .carousel-arrow.right { right:12px; }
@@ -61,37 +76,28 @@
   box-shadow:0 4px 16px rgba(0,0,0,.2);
 }
 
-/* 도트 */
 /* --- Segmented bar dots (ㅡㅡㅡㅡㅡ) --- */
 .carousel-dots{
   position:absolute; left:0; right:0; bottom:12px;
   display:flex; justify-content:center; align-items:center;
   gap:10px; z-index:2;
 }
-
 .carousel-dots .dot{
-  width:24px;            /* 막대 길이 */
-  height:5px;            /* 막대 두께 */
-  border-radius:999px;   /* pill 모양 */
-  border:none;
-  background:rgba(255,255,255,.55);     /* 기본 막대 */
+  width:24px; height:5px; border-radius:999px; border:none;
+  background:rgba(255,255,255,.55);
   box-shadow:0 0 0 1px rgba(0,0,0,.12) inset;
   padding:0; cursor:pointer;
   transition:background .15s ease, box-shadow .15s ease;
 }
-
 .carousel-dots .dot:hover{
   background:rgba(255,255,255,.8);
   box-shadow:0 0 0 1px rgba(0,0,0,.18) inset;
 }
-
-/* 활성 막대(현재 슬라이드) */
 .carousel-dots .dot.active{
   background:var(--brand);
   box-shadow:0 0 0 1px var(--brand-800) inset;
 }
 
-/* 모바일 살짝 작게 */
 @media (max-width:640px){
   .carousel-dots{ gap:8px; bottom:10px; }
   .carousel-dots .dot{ width:18px; height:4px; }

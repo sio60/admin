@@ -2,7 +2,7 @@
 .topbar{
   position:sticky; top:0; z-index:1100;
   display:grid;
-  grid-template-columns:56px 1fr auto; /* [hamburger] [center logo] [actions] */
+  grid-template-columns:56px 1fr auto;
   align-items:center; gap:8px;
   height:85px; padding:0 12px;
   background:#fff; color:var(--text);
