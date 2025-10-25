@@ -1,0 +1,11 @@
+:root{
+  --bg:#f7f7f9;
+  --panel:#fff;
+  --border:#e6e8ec;
+  --text:#1f2328;
+
+  /* brand green (drawer) */
+  --brand:#6B8F2A;
+  --brand-700:#5E8126;
+  --brand-800:#4E6A20;
+}

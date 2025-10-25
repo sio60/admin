@@ -1,0 +1,71 @@
+/* ===== Drawer (left modal) ===== */
+.drawer{
+  position:fixed; inset:0; pointer-events:none; z-index:1200;
+  opacity:0; transition:opacity .2s ease;
+}
+.drawer.open{ pointer-events:auto; opacity:1; }
+
+.drawer-panel{
+  position:absolute; top:0; left:0; height:100%; width:280px;
+  background:var(--brand); color:#fff;
+  transform:translateX(-100%); transition:transform .25s ease;
+  padding:16px; border-right:1px solid rgba(0,0,0,.06); z-index:2;
+}
+.drawer.open .drawer-panel{ transform:translateX(0); }
+
+.drawer-close{
+  position:absolute; top:10px; right:10px; width:32px; height:32px;
+  border:1px solid rgba(255,255,255,.35);
+  color:#fff; background:transparent; border-radius:8px; cursor:pointer;
+}
+.drawer-close:hover{ background:rgba(255,255,255,.10); }
+
+.backdrop{
+  position:absolute; inset:0; background:rgba(0,0,0,.35);
+  border:0; padding:0; margin:0; cursor:default; z-index:1;
+}
+
+/* ===== Drawer nav ===== */
+.drawer-nav .logo{ font-size:18px; margin:8px 0 12px; opacity:.95; color:#fff; }
+
+/* 루트 목록 */
+.nav-root{ list-style:none; padding:0; margin:0; display:grid; gap:10px; }
+
+/* 상단 링크 기본 */
+.nav-link{
+  display:block; color:rgba(255,255,255,.96);
+  padding:12px 14px; border-radius:12px;
+  text-align:left; text-decoration:none;
+}
+.nav-link:hover,
+.nav-link.active{ background:var(--brand-800); color:#fff; }
+
+/* ▼ Products 드롭다운 토글 */
+.nav-link.caret{
+  display:flex; align-items:center; justify-content:space-between;
+  width:100%; background:transparent; border:0; color:inherit; cursor:pointer;
+}
+.nav-link.caret:hover{ background:var(--brand-800); }
+
+/* 토글 오른쪽 작은 화살표 */
+.chev{
+  width:8px; height:8px; border-top:2px solid #fff; border-right:2px solid #fff;
+  transform: rotate(45deg); transition: transform .18s ease;
+}
+.has-sub.open .chev{ transform: rotate(135deg); } /* 아래→위 */
+
+/* 드롭다운 서브 메뉴 */
+.nav-sub{
+  overflow:hidden; max-height:0; opacity:0;
+  transition:max-height .25s ease, opacity .2s ease;
+  padding-left:10px;
+}
+.has-sub.open .nav-sub{ max-height:160px; opacity:1; margin-top:6px; }
+
+/* 서브 링크 */
+.nav-sublink{
+  display:block; color:rgba(255,255,255,.95);
+  padding:10px 12px 10px 20px; border-radius:10px; text-decoration:none;
+}
+.nav-sublink:hover,
+.nav-sublink.active{ background:rgba(0,0,0,.18); color:#fff; }
