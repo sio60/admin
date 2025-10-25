@@ -1,0 +1,84 @@
+/* ===== Footer ===== */
+.site-footer{
+  background: var(--brand);     /* ✅ 브랜드 그린 */
+  color:#fff;
+}
+.footer-inner{
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 36px 24px 90px;
+}
+.footer-brand{
+  margin:0 0 14px;
+  font-size:22px;
+  font-weight:800;
+  letter-spacing:.08em;
+  color:#fff;
+}
+.footer-line{
+  margin: 8px 0;
+  line-height: 1.85;
+  color: rgba(255,255,255,.96);
+}
+.footer-line a{ color:#fff; text-decoration: underline; text-underline-offset: 2px; }
+
+/* ✅ 인스타 로고(아이디 텍스트 없음) */
+.sns-icon{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:32px; height:32px; margin-left:10px;
+  border-radius:8px;
+  background: rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.25);
+  text-decoration:none;
+  vertical-align: middle;
+  transition: background .15s ease, transform .15s ease, border-color .15s ease;
+}
+.sns-icon img{ width:18px; height:18px; display:block; }
+.sns-icon:hover{
+  background: rgba(255,255,255,.2);
+  border-color: rgba(255,255,255,.4);
+  transform: translateY(-1px);
+}
+
+/* Back to top */
+.to-top{
+  position: fixed;
+  right: 22px; bottom: 26px;
+  width: 44px; height: 44px;
+  display:grid; place-items:center;
+  border-radius:10px;
+  background: var(--brand-800);
+  border: 1px solid rgba(0,0,0,.15);
+  color:#fff; cursor:pointer;
+  box-shadow: 0 8px 24px rgba(0,0,0,.18);
+  z-index: 1300;
+
+  opacity: 0; pointer-events: none;
+  transition: opacity .2s ease, transform .2s ease;
+}
+.to-top.show{ opacity: 1; pointer-events: auto; }
+.to-top:hover{ transform: translateY(-2px); }
+.to-top .caret{
+  width: 0; height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 10px solid #fff; /* 위쪽 화살표 */
+}
+
+/* 반응형 */
+@media (max-width: 720px){
+  .footer-inner{ padding: 28px 16px 86px; }
+}
+/* 푸터 관리자 버튼 스타일(상황 맞춰 가볍게) */
+.footer-actions{ margin-top: 10px; }
+.footer-actions .btn{
+  padding: 8px 12px;
+  background: #fff;
+  color: var(--brand-800);
+  border: 1px solid rgba(255,255,255,.35);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.footer-actions .btn:hover{
+  background: #f6f8fa;
+}

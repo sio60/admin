@@ -25,3 +25,13 @@
 .user-tag{ font-size:12px; color:#111; background:#e5e7eb; padding:4px 8px; border-radius:999px; }
 .edit-toggle{ padding:8px 12px; border:1px solid var(--border); border-radius:10px; background:#fff; cursor:pointer; }
 .edit-toggle:hover{ background:#f9fafb; }
+/* 헤더용 인스타 아이콘(배경/테두리 제거) */
+.topbar .sns-icon.topbar-sns{
+  background: transparent;
+  border: 0;
+  width: 28px; height: 28px;
+  line-height: 0;
+}
+.topbar .sns-icon.topbar-sns img{
+  width: 30px; height: 30px; display:block;
+}

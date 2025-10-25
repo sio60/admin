@@ -1,10 +1,11 @@
-import React, { useState } from 'react'
-import Topbar from './Topbar'
-import SideDrawer from './SideDrawer'
-import Nav from './Nav'
+import React, { useState } from "react";
+import Topbar from "./Topbar";
+import SideDrawer from "./SideDrawer";
+import Nav from "./Nav";
+import Footer from "./Footer";
 
 export default function Layout({ children, title, noChrome = false }) {
-  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
     <div className="page-wrap">
@@ -19,8 +20,11 @@ export default function Layout({ children, title, noChrome = false }) {
             <h2>{title}</h2>
           </header>
         ) : null}
-        <div className={`page-body${noChrome ? ' no-chrome' : ''}`}>{children}</div>
+        <div className={`page-body${noChrome ? " no-chrome" : ""}`}>
+          {children}
+        </div>
       </main>
+      <Footer />
     </div>
-  )
+  );
 }

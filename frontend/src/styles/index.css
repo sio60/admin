@@ -1,7 +1,7 @@
 /* 순서 중요: 토큰 → 베이스 → 레이아웃/컴포넌트 → 카루셀 → 페이지별 */
 @import './tokens.css';
 @import './base.css';
-
+@import './footer.css';
 @import './topbar.css';
 @import './drawer.css';
 @import './page.css';
