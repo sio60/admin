@@ -1,8 +1,9 @@
 /* ===== Home page ===== */
 .home-hero{ text-align:center; margin-bottom:16px; }
 .home-hero-img{ width:100%; height:auto; border-radius:12px; }
-.home-title{ margin:12px 0 4px; font-size:22px; font-weight:700; }
-.home-sub{ margin:0 0 12px; color:#475569; }
+/* 히어로 텍스트 숨김 */
+.home-hero .home-title,
+.home-hero .home-sub { display:none !important; }
 
 .feature-grid{
   display:grid;
@@ -13,55 +14,70 @@
 /* 카드 크롬 제거 */
 .page-body.no-chrome{ border:0; border-radius:0; padding:0; background:transparent; }
 
-/* ✅ 홈에서는 Carousel 배경/그라데이션 제거 + 라운드 클립 유지(래퍼 기준) */
+/* 캐러셀 배경/그라데이션 제거 + 라운드 클립 유지 */
 .page-body.no-chrome .carousel-clip{ border-radius:20px; overflow:hidden; background:transparent; }
 .page-body.no-chrome .carousel{ background:transparent; }
 .page-body.no-chrome .carousel::before,
 .page-body.no-chrome .carousel::after{ display:none; content:none; }
 
-/* ===== Triple circle slider (원형만 노출) ===== */
-.triple-section{ margin:18px 0 8px; }
-.triple-grid{
+/* ===== Left text / Right sliders (split) ===== */
+.home-split{
   display:grid;
-  grid-template-columns:repeat(3, minmax(160px, 1fr));
-  gap:22px;
+  grid-template-columns: 1.2fr 1fr;
+  gap:24px;
   align-items:center;
-  justify-items:center;
+  padding:14px 6px 6px;
 }
+.split-text{ text-align:left; padding:0 10px; }
+.welcome-ko{ margin:0 0 6px; font-size:28px; font-weight:800; letter-spacing:-.2px; }
+.welcome-en{ margin:0; font-size:18px; font-weight:600; color:#475569; }
 
-/* Circle slider */
+/* 오른쪽 컨테이너: 3개 가로 정렬 */
+.split-media{
+  display:flex; align-items:center; justify-content:center;
+  gap:22px; flex-wrap:nowrap;
+}
+.split-media.three-rings{ gap:22px; }
+
+/* 슬라이더 크기 */
+.home-split .circle-slider{ width: clamp(140px, 16vw, 220px); }
+
+/* ===== Rect slider (네모) ===== */
 .circle-slider{
-  width:220px; aspect-ratio:1/1; border-radius:50%; overflow:hidden;
-  position:relative; background:#fff;
-  box-shadow:0 2px 10px rgba(0,0,0,.08), inset 0 0 0 1px rgba(0,0,0,.05);
+  aspect-ratio: 3 / 4;                 /* 직사각형 비율 */
+  overflow:hidden;
+  position:relative;
+  background:#fff;
+  border:1px solid rgba(0,0,0,.06);
+  box-shadow:0 4px 18px rgba(0,0,0,.08);
   transition:transform .15s ease, box-shadow .15s ease;
 }
 .circle-slider:hover{
   transform:translateY(-2px);
-  box-shadow:0 8px 22px rgba(0,0,0,.12), inset 0 0 0 1px rgba(255,255,255,.6);
+  box-shadow:0 10px 26px rgba(0,0,0,.12);
 }
+
 .circle-slider .track{
   position:absolute; inset:0; display:flex;
   transition:transform .5s cubic-bezier(.22,.61,.36,1);
 }
 .circle-slider .slide{ flex:0 0 100%; position:relative; }
 
-/* 이미지 여백을 주어 잘림 방지 */
 .circle-slider img{
   position:absolute;
-  width:86%; height:86%;
-  left:7%; top:7%;
+  /* 내부 여백은 컴포넌트에서 props로 계산하여 inset 지정 */
   object-fit:contain; object-position:center;
   background:#fff;
   user-select:none; -webkit-user-drag:none;
 }
 
-/* 반응형 */
-@media (max-width:920px){
-  .triple-grid{ grid-template-columns:repeat(3, 1fr); gap:16px; }
-  .circle-slider{ width:180px; }
+/* ===== Responsive ===== */
+@media (max-width:1000px){
+  .home-split{ grid-template-columns:1fr; text-align:center; }
+  .split-text{ text-align:center; }
+  .split-media{ flex-wrap:wrap; gap:16px; }
+  .home-split .circle-slider{ width: clamp(120px, 28vw, 200px); }
 }
 @media (max-width:640px){
-  .triple-grid{ grid-template-columns:repeat(1, minmax(220px, 1fr)); }
-  .circle-slider{ width:220px; }
+  .home-split .circle-slider{ width:120px; }
 }
