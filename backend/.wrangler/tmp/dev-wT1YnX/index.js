@@ -1,7 +1,7 @@
 var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
-// .wrangler/tmp/bundle-VSHnth/strip-cf-connecting-ip-header.js
+// .wrangler/tmp/bundle-MP4mkm/strip-cf-connecting-ip-header.js
 function stripCfConnectingIPHeader(input, init) {
   const request = new Request(input, init);
   request.headers.delete("CF-Connecting-IP");
@@ -57,17 +57,6 @@ async function hmacSign(secret, data) {
   return crypto.subtle.sign("HMAC", key, new TextEncoder().encode(data));
 }
 __name(hmacSign, "hmacSign");
-async function signJWT(payload, secret, { expSeconds = 3600 } = {}) {
-  const header = { alg: "HS256", typ: "JWT" };
-  const now = Math.floor(Date.now() / 1e3);
-  const body = { iat: now, exp: now + expSeconds, ...payload };
-  const p1 = base64url(new TextEncoder().encode(JSON.stringify(header)));
-  const p2 = base64url(new TextEncoder().encode(JSON.stringify(body)));
-  const unsigned = `${p1}.${p2}`;
-  const sig = base64url(await hmacSign(secret, unsigned));
-  return `${unsigned}.${sig}`;
-}
-__name(signJWT, "signJWT");
 async function verifyJWT(token, secret) {
   const [h, p, s] = token.split(".");
   if (!h || !p || !s)
@@ -145,29 +134,132 @@ async function handleContent(request, env) {
 }
 __name(handleContent, "handleContent");
 
-// src/routes/admin.js
-async function handleAdmin(request, env) {
+// src/routes/products.js
+function jsonHeaders(status = 200) {
+  return { status, headers: { "Content-Type": "application/json" } };
+}
+__name(jsonHeaders, "jsonHeaders");
+function mapStatusParam(raw) {
+  if (!raw)
+    return null;
+  const v = String(raw).toLowerCase();
+  if (v === "live")
+    return "for_sale";
+  if (v === "ended")
+    return "discontinued";
+  if (v === "for_sale" || v === "discontinued")
+    return v;
+  return null;
+}
+__name(mapStatusParam, "mapStatusParam");
+async function handleProducts(request, env) {
   const url = new URL(request.url);
-  if (url.pathname === "/api/admin/login" && request.method === "POST") {
-    const { password } = await request.json();
-    if (!password || password !== env.ADMIN_PASSWORD) {
-      return new Response(JSON.stringify({ error: "INVALID_PASSWORD" }), { status: 401 });
-    }
-    const token = await signJWT({ role: "admin" }, env.JWT_SECRET, { expSeconds: 60 * 60 * 8 });
-    return new Response(JSON.stringify({ token, role: "admin" }), { status: 200, headers: { "Content-Type": "application/json" } });
+  const path = url.pathname;
+  if (request.method === "GET" && path === "/api/products") {
+    const statusParam = mapStatusParam(url.searchParams.get("status"));
+    const page = Math.max(parseInt(url.searchParams.get("page") || "1", 10), 1);
+    const size = Math.min(Math.max(parseInt(url.searchParams.get("page_size") || "12", 10), 1), 50);
+    const start = (page - 1) * size;
+    const end = start + size - 1;
+    const order = (url.searchParams.get("order") || "asc").toLowerCase() === "desc" ? "desc" : "asc";
+    const filters = [];
+    if (statusParam)
+      filters.push(`status=eq.${encodeURIComponent(statusParam)}`);
+    const q = filters.length ? `&${filters.join("&")}` : "";
+    const res = await fetch(
+      `${env.SUPABASE_URL}/rest/v1/products?select=*&order=order_no.${order}${q}`,
+      {
+        headers: {
+          apikey: env.SUPABASE_SERVICE_KEY,
+          Authorization: `Bearer ${env.SUPABASE_SERVICE_KEY}`,
+          "Range-Unit": "items",
+          Range: `${start}-${end}`,
+          Prefer: "count=exact"
+        }
+      }
+    );
+    const body = await res.text();
+    const out = new Response(body, jsonHeaders(res.status));
+    const cr = res.headers.get("Content-Range");
+    if (cr)
+      out.headers.set("Content-Range", cr);
+    return out;
   }
-  if (url.pathname === "/api/admin/verify" && request.method === "GET") {
-    const auth = request.headers.get("Authorization") || "";
-    const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
-    const payload = token ? await verifyJWT(token, env.JWT_SECRET) : null;
-    if (!payload || payload.role !== "admin") {
-      return new Response(JSON.stringify({ ok: false }), { status: 401, headers: { "Content-Type": "application/json" } });
+  const m = path.match(/^\/api\/products\/(\d+)$/);
+  if (request.method === "GET" && m) {
+    const id = m[1];
+    const res = await fetch(`${env.SUPABASE_URL}/rest/v1/products?id=eq.${id}&select=*`, {
+      headers: {
+        apikey: env.SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_KEY}`
+      }
+    });
+    return new Response(await res.text(), jsonHeaders(res.status));
+  }
+  if (request.method === "POST" && path === "/api/products") {
+    const body = await request.json();
+    if (!body?.name) {
+      return new Response(JSON.stringify({ error: "name is required" }), jsonHeaders(400));
     }
-    return new Response(JSON.stringify({ ok: true, role: "admin" }), { status: 200, headers: { "Content-Type": "application/json" } });
+    if (body.status && !["for_sale", "discontinued"].includes(body.status)) {
+      return new Response(JSON.stringify({ error: "invalid status" }), jsonHeaders(400));
+    }
+    const res = await fetch(`${env.SUPABASE_URL}/rest/v1/products`, {
+      method: "POST",
+      headers: {
+        apikey: env.SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "return=representation"
+      },
+      body: JSON.stringify({
+        name: body.name,
+        sub_name: body.sub_name ?? null,
+        description: body.description ?? null,
+        thumb_url: body.thumb_url ?? null,
+        image_urls: body.image_urls ?? [],
+        ingredients: body.ingredients ?? null,
+        price: body.price ?? null,
+        status: body.status ?? "for_sale",
+        discontinued_at: body.discontinued_at ?? null,
+        order_no: body.order_no ?? 0,
+        is_active: body.is_active ?? true
+      })
+    });
+    return new Response(await res.text(), jsonHeaders(res.status));
+  }
+  if (request.method === "PUT" && m) {
+    const id = m[1];
+    const body = await request.json();
+    if (body.status && !["for_sale", "discontinued"].includes(body.status)) {
+      return new Response(JSON.stringify({ error: "invalid status" }), jsonHeaders(400));
+    }
+    const res = await fetch(`${env.SUPABASE_URL}/rest/v1/products?id=eq.${id}`, {
+      method: "PATCH",
+      headers: {
+        apikey: env.SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "return=representation"
+      },
+      body: JSON.stringify(body)
+    });
+    return new Response(await res.text(), jsonHeaders(res.status));
+  }
+  if (request.method === "DELETE" && m) {
+    const id = m[1];
+    const res = await fetch(`${env.SUPABASE_URL}/rest/v1/products?id=eq.${id}`, {
+      method: "DELETE",
+      headers: {
+        apikey: env.SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_KEY}`
+      }
+    });
+    return new Response(null, { status: res.ok ? 204 : res.status });
   }
   return new Response("Not Found", { status: 404 });
 }
-__name(handleAdmin, "handleAdmin");
+__name(handleProducts, "handleProducts");
 
 // src/index.js
 var src_default = {
@@ -177,20 +269,30 @@ var src_default = {
       return pf;
     const url = new URL(request.url);
     if (url.pathname === "/" && request.method === "GET") {
-      return withCORS(new Response(JSON.stringify({ ok: true, routes: ["/api/admin/*", "/api/content"] }), { headers: { "Content-Type": "application/json" } }));
-    }
-    if (url.pathname.startsWith("/api/admin")) {
-      const resp = await handleAdmin(request, env);
-      return withCORS(resp);
+      return withCORS(new Response(JSON.stringify({ ok: true, routes: ["/api/content", "/api/products"] }), {
+        headers: { "Content-Type": "application/json" }
+      }));
     }
     if (url.pathname === "/api/content" && request.method === "GET") {
       return withCORS(await handleContent(request, env));
     }
-    if (url.pathname.startsWith("/api/content")) {
+    if (url.pathname.startsWith("/api/content") && ["PUT", "PATCH", "DELETE"].includes(request.method)) {
       const auth = await requireAdmin(request, env);
       if (!auth.ok)
         return withCORS(new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 }));
       return withCORS(await handleContent(request, env));
+    }
+    if (url.pathname === "/api/products" && request.method === "GET") {
+      return withCORS(await handleProducts(request, env));
+    }
+    if (/^\/api\/products\/\d+$/.test(url.pathname) && request.method === "GET") {
+      return withCORS(await handleProducts(request, env));
+    }
+    if (url.pathname.startsWith("/api/products") && ["POST", "PUT", "DELETE"].includes(request.method)) {
+      const auth = await requireAdmin(request, env);
+      if (!auth.ok)
+        return withCORS(new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 }));
+      return withCORS(await handleProducts(request, env));
     }
     return withCORS(new Response("Not Found", { status: 404 }));
   }
@@ -237,7 +339,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// .wrangler/tmp/bundle-VSHnth/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-MP4mkm/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -269,7 +371,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// .wrangler/tmp/bundle-VSHnth/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-MP4mkm/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;
