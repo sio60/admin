@@ -1,35 +1,38 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React from 'react'
+import { Routes, Route } from 'react-router-dom'
+import { AuthProvider } from './context/AuthProvider'
+import { EditModeProvider } from './context/EditModeContext'
+import { ServerAdminProvider } from './context/ServerAdminProvider' // ✅ 추가
 
-function App() {
-  const [count, setCount] = useState(0)
+import Home from './pages/Home'
+import About from './pages/About'
+import Brand from './pages/Brand'
+import Products from './pages/Products'
+import WhereToBuy from './pages/WhereToBuy'
+import SNS from './pages/SNS'
+import Contact from './pages/Contact'
+import Notice from './pages/Notice'
+import Admin from './pages/Admin'
+import './styles/base.css'
+import 'modern-normalize/modern-normalize.css'
 
+export default function App() {
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <AuthProvider>
+      <ServerAdminProvider>{/* ✅ 서버 관리자 쿠키 기반 권한 */}
+        <EditModeProvider>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/brand" element={<Brand />} />
+            <Route path="/products" element={<Products />} />
+            <Route path="/where" element={<WhereToBuy />} />
+            <Route path="/sns" element={<SNS />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/notice" element={<Notice />} />
+            <Route path="/admin" element={<Admin />} />
+          </Routes>
+        </EditModeProvider>
+      </ServerAdminProvider>
+    </AuthProvider>
   )
 }
-
-export default App
