@@ -3,7 +3,7 @@ import Topbar from './Topbar'
 import SideDrawer from './SideDrawer'
 import Nav from './Nav'
 
-export default function Layout({ children, title }) {
+export default function Layout({ children, title, noChrome = false }) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -14,10 +14,16 @@ export default function Layout({ children, title }) {
       </SideDrawer>
 
       <main className="page-main">
-        <header className="page-header">
-          <h2>{title}</h2>
-        </header>
-        <div className="page-body">{children}</div>
+        {/* 제목이 있을 때만 헤더 렌더링 */}
+        {title ? (
+          <header className="page-header">
+            <h2>{title}</h2>
+          </header>
+        ) : null}
+
+        <div className={`page-body${noChrome ? ' no-chrome' : ''}`}>
+          {children}
+        </div>
       </main>
     </div>
   )

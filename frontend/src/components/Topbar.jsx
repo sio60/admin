@@ -7,22 +7,37 @@ export default function Topbar({ onMenu }) {
   const { canEdit, on, toggle } = useEditMode()
   const { user } = useAuth()
 
+  // 절대경로(도메인 포함) 헬퍼
+  const abs = (p) => new URL(p, window.location.origin).toString()
+
   return (
     <header className="topbar">
-      {/* 햄버거: 제공한 이미지 사용 */}
+      {/* 햄버거: 절대경로 */}
       <button
         className="hamburger"
         onClick={onMenu}
         aria-label="메뉴 열기"
         aria-haspopup="dialog"
       >
-        <img src="/icons/hamburger.png" alt="" width="26" height="26" aria-hidden="true" />
+        <img
+          src={abs('/icons/hamburger.png')}
+          alt=""
+          width="26"
+          height="26"
+          aria-hidden="true"
+          decoding="async"
+        />
       </button>
 
-      {/* 가운데 로고 (텍스트 브랜드 제거) */}
+      {/* 가운데 로고: 절대경로 */}
       <div className="logo-center" aria-label="홈으로">
-        <a href="/" className="logo-link">
-          <img src="/brand-logo.png" alt="Logo" className="logo-img" />
+        <a href={abs('/')} className="logo-link">
+          <img
+            src={abs('/brand-logo.png')}
+            alt="Logo"
+            className="logo-img"
+            decoding="async"
+          />
         </a>
       </div>
 
