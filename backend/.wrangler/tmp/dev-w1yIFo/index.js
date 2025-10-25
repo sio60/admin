@@ -1,7 +1,7 @@
 var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
-// .wrangler/tmp/bundle-rYkqz0/strip-cf-connecting-ip-header.js
+// .wrangler/tmp/bundle-VSHnth/strip-cf-connecting-ip-header.js
 function stripCfConnectingIPHeader(input, init) {
   const request = new Request(input, init);
   request.headers.delete("CF-Connecting-IP");
@@ -41,14 +41,57 @@ function preflight(request, origin = "*") {
 }
 __name(preflight, "preflight");
 
+// src/utils/jwt.js
+function base64url(buf) {
+  return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+}
+__name(base64url, "base64url");
+async function hmacSign(secret, data) {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  return crypto.subtle.sign("HMAC", key, new TextEncoder().encode(data));
+}
+__name(hmacSign, "hmacSign");
+async function signJWT(payload, secret, { expSeconds = 3600 } = {}) {
+  const header = { alg: "HS256", typ: "JWT" };
+  const now = Math.floor(Date.now() / 1e3);
+  const body = { iat: now, exp: now + expSeconds, ...payload };
+  const p1 = base64url(new TextEncoder().encode(JSON.stringify(header)));
+  const p2 = base64url(new TextEncoder().encode(JSON.stringify(body)));
+  const unsigned = `${p1}.${p2}`;
+  const sig = base64url(await hmacSign(secret, unsigned));
+  return `${unsigned}.${sig}`;
+}
+__name(signJWT, "signJWT");
+async function verifyJWT(token, secret) {
+  const [h, p, s] = token.split(".");
+  if (!h || !p || !s)
+    return null;
+  const sig = base64url(await hmacSign(secret, `${h}.${p}`));
+  if (sig !== s)
+    return null;
+  const json = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(p.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0))));
+  if (json.exp && Math.floor(Date.now() / 1e3) > json.exp)
+    return null;
+  return json;
+}
+__name(verifyJWT, "verifyJWT");
+
 // src/utils/auth.js
 async function requireAdmin(request, env) {
   const auth = request.headers.get("Authorization") || "";
   const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
-  if (token && env.JWT_SECRET && token === env.JWT_SECRET) {
-    return { ok: true, user: { role: "admin" } };
-  }
-  return { ok: false, error: "UNAUTHORIZED" };
+  if (!token)
+    return { ok: false };
+  const payload = await verifyJWT(token, env.JWT_SECRET);
+  if (!payload || payload.role !== "admin")
+    return { ok: false };
+  return { ok: true, user: { role: "admin" } };
 }
 __name(requireAdmin, "requireAdmin");
 
@@ -102,29 +145,54 @@ async function handleContent(request, env) {
 }
 __name(handleContent, "handleContent");
 
+// src/routes/admin.js
+async function handleAdmin(request, env) {
+  const url = new URL(request.url);
+  if (url.pathname === "/api/admin/login" && request.method === "POST") {
+    const { password } = await request.json();
+    if (!password || password !== env.ADMIN_PASSWORD) {
+      return new Response(JSON.stringify({ error: "INVALID_PASSWORD" }), { status: 401 });
+    }
+    const token = await signJWT({ role: "admin" }, env.JWT_SECRET, { expSeconds: 60 * 60 * 8 });
+    return new Response(JSON.stringify({ token, role: "admin" }), { status: 200, headers: { "Content-Type": "application/json" } });
+  }
+  if (url.pathname === "/api/admin/verify" && request.method === "GET") {
+    const auth = request.headers.get("Authorization") || "";
+    const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+    const payload = token ? await verifyJWT(token, env.JWT_SECRET) : null;
+    if (!payload || payload.role !== "admin") {
+      return new Response(JSON.stringify({ ok: false }), { status: 401, headers: { "Content-Type": "application/json" } });
+    }
+    return new Response(JSON.stringify({ ok: true, role: "admin" }), { status: 200, headers: { "Content-Type": "application/json" } });
+  }
+  return new Response("Not Found", { status: 404 });
+}
+__name(handleAdmin, "handleAdmin");
+
 // src/index.js
 var src_default = {
-  async fetch(request, env, ctx) {
+  async fetch(request, env) {
     const pf = preflight(request, "*");
     if (pf)
       return pf;
     const url = new URL(request.url);
-    try {
-      if (url.pathname === "/api/content" && request.method === "GET") {
-        const resp = await handleContent(request, env);
-        return withCORS(resp);
-      }
-      if (url.pathname.startsWith("/api/content")) {
-        const auth = await requireAdmin(request, env);
-        if (!auth.ok)
-          return withCORS(new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 }));
-        const resp = await handleContent(request, env);
-        return withCORS(resp);
-      }
-      return withCORS(new Response("Not Found", { status: 404 }));
-    } catch (e) {
-      return withCORS(new Response(JSON.stringify({ error: e.message || "Server Error" }), { status: 500 }));
+    if (url.pathname === "/" && request.method === "GET") {
+      return withCORS(new Response(JSON.stringify({ ok: true, routes: ["/api/admin/*", "/api/content"] }), { headers: { "Content-Type": "application/json" } }));
     }
+    if (url.pathname.startsWith("/api/admin")) {
+      const resp = await handleAdmin(request, env);
+      return withCORS(resp);
+    }
+    if (url.pathname === "/api/content" && request.method === "GET") {
+      return withCORS(await handleContent(request, env));
+    }
+    if (url.pathname.startsWith("/api/content")) {
+      const auth = await requireAdmin(request, env);
+      if (!auth.ok)
+        return withCORS(new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 }));
+      return withCORS(await handleContent(request, env));
+    }
+    return withCORS(new Response("Not Found", { status: 404 }));
   }
 };
 
@@ -169,7 +237,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// .wrangler/tmp/bundle-rYkqz0/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-VSHnth/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -201,7 +269,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// .wrangler/tmp/bundle-rYkqz0/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-VSHnth/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;
