@@ -25,7 +25,7 @@ body {
   display:grid;
   grid-template-columns:56px 1fr auto; /* [hamburger] [center logo] [actions] */
   align-items:center; gap:8px;
-  height:80px; padding:0 12px;
+  height:85px; padding:0 12px;
   background:#fff; color:var(--text);
   border-bottom:1px solid var(--border);
 }
@@ -65,38 +65,42 @@ body {
 
 .drawer-panel{
   position:absolute; top:0; left:0; height:100%; width:280px;
-  background:var(--brand); color:#fff;
+  background:var(--brand);
+  color:#000;                           /* ✅ 검정 글자 */
   transform:translateX(-100%);
   transition:transform .25s ease;
   padding:16px;
   border-right:1px solid rgba(0,0,0,.06);
+  z-index:2;                            /* 클릭 우선순위 */
 }
 .drawer.open .drawer-panel{ transform:translateX(0); }
 
 .drawer-close{
   position:absolute; top:10px; right:10px; width:32px; height:32px;
-  border:1px solid rgba(255,255,255,.35);
-  color:#fff; background:transparent; border-radius:8px; cursor:pointer;
+  border:1px solid rgba(0,0,0,.35);     /* ✅ 검정 테두리 */
+  color:#000;                           /* ✅ 검정 아이콘 */
+  background:transparent; border-radius:8px; cursor:pointer;
 }
-.drawer-close:hover{ background:rgba(255,255,255,.10); }
+.drawer-close:hover{ background:rgba(0,0,0,.06); }
 
 .backdrop{
   position:absolute; inset:0; background:rgba(0,0,0,.35);
   border:0; padding:0; margin:0; cursor:default;
+  z-index:1;
 }
 
 /* Drawer nav */
-.drawer-nav .logo{ font-size:18px; margin:8px 0 12px; opacity:.95; }
+.drawer-nav .logo{ font-size:18px; margin:8px 0 12px; opacity:.95; color:#000; } /* ✅ */
 .drawer-nav ul{ list-style:none; padding:0; margin:0; display:grid; gap:10px; }
 
 .nav-link{
-  display:block; color:rgba(255,255,255,.96);
+  display:block; color:#000;            /* ✅ 검정 글자 */
   text-decoration:none; padding:12px 14px; border-radius:12px;
 }
 .nav-link:hover,
 .nav-link.active{
-  background:var(--brand-800);
-  color:#fff;
+  background:rgba(255,255,255,.25);     /* ✅ 밝은 오버레이로 하이라이트 */
+  color:#000;
 }
 
 /* ===== Page ===== */
@@ -141,6 +145,14 @@ body {
 /* links reset inside white header */
 a{ color:inherit; }
 
-/* 클릭 우선순위 보장 */
-.drawer-panel { z-index: 2; }
-.backdrop     { z-index: 1; }  
+/* Home */
+.home-hero { text-align:center; margin-bottom:16px; }
+.home-hero-img { width:100%; height:auto; border-radius:12px; }
+.home-title { margin:12px 0 4px; font-size:22px; font-weight:700; }
+.home-sub { margin:0 0 12px; color:#475569; }
+
+.feature-grid {
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap:12px;
+}

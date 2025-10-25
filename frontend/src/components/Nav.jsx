@@ -8,7 +8,7 @@ export default function Nav({ onNavigate }) {
     <nav className="drawer-nav">
       <h1 className="logo">Menu</h1>
       <ul>
-        <li><NavLink to="/" className={link} onClick={handle}>About us & History</NavLink></li>
+        <li><NavLink to="/about" className={link} onClick={handle}>About us & History</NavLink></li> {/* ✅ 경로 변경 */}
         <li><NavLink to="/brand" className={link} onClick={handle}>Brand</NavLink></li>
         <li><NavLink to="/products" className={link} onClick={handle}>Products</NavLink></li>
         <li><NavLink to="/where" className={link} onClick={handle}>Where to Buy</NavLink></li>

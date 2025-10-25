@@ -1,42 +1,53 @@
 import React, { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { supabase } from '../lib/supabase'                 // 업로드 용
 import { useEditMode } from '../context/EditModeContext'
+import { useServerAdmin } from '../context/ServerAdminProvider'
+import { getContent, upsertContent } from '../routes/admin-auth'
 import '../styles/editable.css'
 
 export default function EditableImage({ blockKey, alt='', className='', width, height }) {
   const { on } = useEditMode()
+  const { token } = useServerAdmin()
   const [url, setUrl] = useState('')
-  const [id, setId] = useState(null)
 
   useEffect(() => {
-    let live = true
+    let alive = true
     ;(async () => {
-      const { data } = await supabase.from('content_blocks').select('id, content').eq('key', blockKey).maybeSingle()
-      if (live) { setId(data?.id ?? null); setUrl(data?.content?.url ?? '') }
+      try {
+        const res = await getContent(blockKey)
+        const u = res?.content?.url ?? res?.items?.[0]?.content?.url ?? ''
+        if (alive) setUrl(u)
+      } catch {}
     })()
-    return () => { live = false }
+    return () => { alive = false }
   }, [blockKey])
 
   async function handleFile(e) {
     const file = e.target.files?.[0]
     if (!file) return
+
     const ext = file.name.split('.').pop()
     const path = `${blockKey}-${crypto.randomUUID()}.${ext}`
 
+    // 1) Supabase Storage 업로드
     const { error: upErr } = await supabase.storage.from('images').upload(path, file)
-    if (upErr) return
+    if (upErr) { alert('업로드 실패'); return }
 
     const { data: pub } = supabase.storage.from('images').getPublicUrl(path)
-    const row = { key: blockKey, type: 'image', content: { url: pub.publicUrl } }
-    if (id) row.id = id
-    const { data: saved } = await supabase.from('content_blocks').upsert(row).select('id').single()
-    setId(saved.id)
-    setUrl(pub.publicUrl)
+    const publicUrl = pub?.publicUrl
+    if (!publicUrl) return
+
+    // 2) 컨텐츠 저장(백엔드)
+    await upsertContent(token, { key: blockKey, type: 'image', content: { url: publicUrl } })
+    setUrl(publicUrl)
   }
 
   return (
     <div className="editable">
-      {url ? <img src={url} alt={alt} className={className} width={width} height={height}/> : <div className={`image-placeholder ${className}`}>이미지 없음</div>}
+      {url
+        ? <img src={url} alt={alt} className={className} width={width} height={height}/>
+        : <div className={`image-placeholder ${className}`}>이미지 없음</div>
+      }
       {on && (
         <label className="toolbar">
           <input type="file" accept="image/*" onChange={handleFile} />
