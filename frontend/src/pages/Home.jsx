@@ -8,7 +8,7 @@ export default function Home() {
   // 상단 캐러셀 이미지
   const slides = Array.from({ length: 7 }, (_, i) => `/slide/slide${i + 1}.png`);
 
-  // c1/c2/c3 이미지 시퀀스
+  // 세 슬라이더 이미지
   const seq = (base, k) => [
     `/circle/${base}.png`,
     ...Array.from({ length: k }, (_, i) => `/circle/${base}_${i + 1}.png`),
@@ -20,34 +20,40 @@ export default function Home() {
 
   return (
     <Layout title={null} noChrome>
-      {/* 상단 캐러셀만 표시 (제목/설명 텍스트 제거) */}
+      {/* 상단 캐러셀 */}
       <section className="home-hero">
         <Carousel images={slides} interval={4500} aspect={24 / 9} />
       </section>
 
-      {/* 좌: 환영 문구 / 우: 네모 슬라이더 3개 */}
-      <section className="home-split">
-        <div className="split-text">
-          <h3 className="welcome-ko">
+      {/* 중앙 타이틀 + 네모 슬라이더 3개 (가운데만 살짝 아래) */}
+      <section className="home-intro">
+        <div className="intro-text">
+          <h1 className="intro-title">
             <EditableText
               blockKey="home.welcome.ko"
               tag="span"
-              placeholder="제스트코에 오신 것을 환영합니다."
+              placeholder="신뢰·맛·품질로 완성하는 제스트의 선택"
             />
-          </h3>
-          <h4 className="welcome-en">
+          </h1>
+          <p className="intro-sub">
             <EditableText
               blockKey="home.welcome.en"
               tag="span"
-              placeholder="Welcome To Zestco!"
+              placeholder="We deliver trusted quality and remarkable taste."
             />
-          </h4>
+          </p>
         </div>
 
-        <div className="split-media three-rings">
-          <CircleSlider images={c1} interval={2600} padPct={6} radius={14} />
-          <CircleSlider images={c2} interval={2800} padPct={6} radius={14} />
-          <CircleSlider images={c3} interval={3000} padPct={6} radius={14} />
+        <div className="intro-sliders">
+          <div className="intro-item">
+            <CircleSlider images={c1} interval={2600} padPct={6} radius={14} />
+          </div>
+          <div className="intro-item lower">
+            <CircleSlider images={c2} interval={2800} padPct={6} radius={14} />
+          </div>
+          <div className="intro-item">
+            <CircleSlider images={c3} interval={3000} padPct={6} radius={14} />
+          </div>
         </div>
       </section>
     </Layout>
