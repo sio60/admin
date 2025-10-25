@@ -17,11 +17,11 @@ export default function SideDrawer({ open, onClose, children }) {
 
   return (
     <div className={`drawer ${open ? 'open' : ''}`} role="dialog" aria-modal="true">
+      <button className="backdrop" onClick={onClose} aria-label="배경 닫기" />
       <div className="drawer-panel">
         <button className="drawer-close" onClick={onClose} aria-label="닫기">×</button>
         {children}
       </div>
-      <button className="backdrop" onClick={onClose} aria-label="배경 닫기" />
     </div>
   )
 }

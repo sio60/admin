@@ -15,7 +15,6 @@ export default function Nav({ onNavigate }) {
         <li><NavLink to="/sns" className={link} onClick={handle}>SNS</NavLink></li>
         <li><NavLink to="/contact" className={link} onClick={handle}>Contact</NavLink></li>
         <li><NavLink to="/notice" className={link} onClick={handle}>Notice</NavLink></li>
-        <li><NavLink to="/admin" className={link} onClick={handle}>admin</NavLink></li>
       </ul>
     </nav>
   )

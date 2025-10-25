@@ -141,3 +141,6 @@ body {
 /* links reset inside white header */
 a{ color:inherit; }
 
+/* 클릭 우선순위 보장 */
+.drawer-panel { z-index: 2; }
+.backdrop     { z-index: 1; }  
