@@ -1,63 +1,128 @@
-// src/pages/ProductsList.jsx
-import React, { useEffect, useState } from 'react'
-import Layout from '../components/Layout'
-import { Link } from 'react-router-dom'
+import React, { useEffect, useState } from 'react';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import Layout from '../components/Layout';
 
-const API = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8787'
+const PAGE_SIZE = 10;
 
-export default function ProductsList({ status = 'live' }) {
-  const isLive = status === 'live'
-  const title = isLive ? 'Products · 판매중' : 'Products · 판매종료'
+export default function NoticeList() {
+  const [sp, setSp] = useSearchParams();
+  const nav = useNavigate();
 
-  const [items, setItems] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const page = Math.max(parseInt(sp.get('page') || '1', 10), 1);
+  const sort = sp.get('sort') || 'newest'; // newest | viewed | updated | best
+  const q = sp.get('q') || '';
+  const target = sp.get('target') || 'all';
+
+  const [loading, setLoading] = useState(false);
+  const [rows, setRows] = useState([]);
+  const [total, setTotal] = useState(0);
 
   useEffect(() => {
-    let cancel = false
-    setLoading(true)
-    setError('')
-    fetch(`${API}/api/products?status=${status}&page=1&page_size=12&order=asc`)
-      .then(r => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`)
-        return r.json()
-      })
-      .then(data => { if (!cancel) setItems(data || []) })
-      .catch(e => { if (!cancel) setError(e.message || '불러오기에 실패했어요') })
-      .finally(() => { if (!cancel) setLoading(false) })
-    return () => { cancel = true }
-  }, [status])
+    const load = async () => {
+      setLoading(true);
+      const qs = new URLSearchParams({
+        page: String(page),
+        page_size: String(PAGE_SIZE),
+        sort,
+      });
+      if (q) qs.set('q', q);
+      if (target) qs.set('target', target);
+
+      const res = await fetch(`/api/notices?${qs.toString()}`);
+      const data = await res.json();
+      setRows(data.items || []);
+      setTotal(data.total || 0);
+      setLoading(false);
+    };
+    load();
+  }, [page, sort, q, target]);
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  const onSearch = (e) => {
+    e.preventDefault();
+    const form = new FormData(e.currentTarget);
+    const nq = (form.get('q') || '').toString().trim();
+    const nt = (form.get('target') || 'all').toString();
+    setSp(params => {
+      params.set('page', '1');
+      if (nq) params.set('q', nq); else params.delete('q');
+      params.set('target', nt);
+      return params;
+    }, { replace: true });
+  };
 
   return (
-    <Layout title={title}>
-      <div className="products-toolbar">
-        <div className="tabs">
-          <Link to="/products/live"  className={`tab ${isLive ? 'active' : ''}`}>판매중</Link>
-          <Link to="/products/ended" className={`tab ${!isLive ? 'active' : ''}`}>판매종료</Link>
-        </div>
+    <Layout title="Notice">
+      <div className="notice-tools">
+        <form onSubmit={onSearch} className="notice-search">
+          <select name="target" defaultValue={target}>
+            <option value="all">전체</option>
+            <option value="title">제목</option>
+            <option value="content">내용</option>
+            <option value="author">작성자</option>
+          </select>
+          <input name="q" defaultValue={q} placeholder="검색어" />
+          <button type="submit">검색</button>
+
+          <select
+            value={sort}
+            onChange={e => setSp(p => { p.set('sort', e.target.value); return p; })}
+            style={{ marginLeft: 12 }}
+          >
+            <option value="newest">최신순</option>
+            <option value="best">추천순</option>
+            <option value="viewed">조회순</option>
+            <option value="updated">업데이트순</option>
+          </select>
+        </form>
       </div>
 
-      {loading && <p className="muted">불러오는 중…</p>}
-      {error && <p className="error">에러: {error}</p>}
-
-      <div className="product-grid">
-        {items.map(it => (
-          <div className="product-card" key={it.id}>
-            {it.thumb_url
-              ? <img src={it.thumb_url} alt={it.name} className="product-img" />
-              : <div className="product-img placeholder">이미지 없음</div>}
-            <h4 className="product-name">{it.name}</h4>
-            {it.sub_name && <div className="product-sub">{it.sub_name}</div>}
-            {it.description && <p className="product-desc">{it.description}</p>}
-            {typeof it.price === 'number' && (
-              <div className="product-price">{it.price.toLocaleString()}원</div>
+      {loading ? <p>로딩중…</p> : (
+        <table className="notice-table">
+          <thead>
+            <tr>
+              <th style={{width:70}}>번호</th>
+              <th>제목</th>
+              <th style={{width:120}}>작성자</th>
+              <th style={{width:140}}>작성일</th>
+              <th style={{width:80}}>추천</th>
+              <th style={{width:80}}>조회</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.id}>
+                <td>{r.id}</td>
+                <td><Link to={`/notice/${r.id}`}>{r.title}</Link></td>
+                <td>{r.author || 'Zestco'}</td>
+                <td>{new Date(r.published_at).toISOString().slice(0,10)}</td>
+                <td>{r.likes ?? 0}</td>
+                <td>{r.views ?? 0}</td>
+              </tr>
+            ))}
+            {!rows.length && (
+              <tr><td colSpan={6} style={{textAlign:'center'}}>게시글이 없습니다.</td></tr>
             )}
-          </div>
-        ))}
-        {!loading && !error && items.length === 0 && (
-          <div className="muted">표시할 제품이 없습니다.</div>
-        )}
+          </tbody>
+        </table>
+      )}
+
+      {/* 페이징 */}
+      <div className="notice-paging">
+        {Array.from({ length: totalPages }).map((_, i) => {
+          const p = i + 1;
+          return (
+            <button
+              key={p}
+              className={`page-btn ${p === page ? 'active' : ''}`}
+              onClick={() => setSp(params => { params.set('page', String(p)); return params; })}
+            >
+              {p}
+            </button>
+          );
+        })}
       </div>
     </Layout>
-  )
+  );
 }

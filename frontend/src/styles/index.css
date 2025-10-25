@@ -9,3 +9,14 @@
 
 @import './carousel.css';
 @import './home.css';
+
+.notice-table { width:100%; border-collapse:collapse; }
+.notice-table th, .notice-table td { border-bottom:1px solid #e5e5e5; padding:10px; text-align:left; }
+.notices-toolbar { display:flex; gap:12px; align-items:center; margin:12px 0 16px; }
+.notice-search input { padding:6px 8px; }
+.notice-detail .notice-title { margin: 0 0 8px; }
+.notice-detail .notice-meta { color:#666; margin-bottom:16px; }
+.notice-content img { max-width:100%; height:auto; }
+.pagination { display:flex; gap:12px; align-items:center; justify-content:center; margin:16px 0; }
+.btn { display:inline-block; padding:8px 12px; border:1px solid #ccc; border-radius:6px; }
+
