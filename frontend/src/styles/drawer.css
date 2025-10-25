@@ -25,36 +25,30 @@
   border:0; padding:0; margin:0; cursor:default; z-index:1;
 }
 
-/* ===== Drawer nav ===== */
+/* ===== Drawer nav / dropdown ===== */
 .drawer-nav .logo{ font-size:18px; margin:8px 0 12px; opacity:.95; color:#fff; }
-
-/* 루트 목록 */
 .nav-root{ list-style:none; padding:0; margin:0; display:grid; gap:10px; }
 
-/* 상단 링크 기본 */
 .nav-link{
   display:block; color:rgba(255,255,255,.96);
-  padding:12px 14px; border-radius:12px;
-  text-align:left; text-decoration:none;
+  padding:12px 14px; border-radius:12px; text-align:left;
 }
 .nav-link:hover,
 .nav-link.active{ background:var(--brand-800); color:#fff; }
 
-/* ▼ Products 드롭다운 토글 */
+/* Products 토글 */
 .nav-link.caret{
   display:flex; align-items:center; justify-content:space-between;
   width:100%; background:transparent; border:0; color:inherit; cursor:pointer;
 }
 .nav-link.caret:hover{ background:var(--brand-800); }
 
-/* 토글 오른쪽 작은 화살표 */
 .chev{
   width:8px; height:8px; border-top:2px solid #fff; border-right:2px solid #fff;
   transform: rotate(45deg); transition: transform .18s ease;
 }
-.has-sub.open .chev{ transform: rotate(135deg); } /* 아래→위 */
+.has-sub.open .chev{ transform: rotate(135deg); }
 
-/* 드롭다운 서브 메뉴 */
 .nav-sub{
   overflow:hidden; max-height:0; opacity:0;
   transition:max-height .25s ease, opacity .2s ease;
@@ -62,7 +56,6 @@
 }
 .has-sub.open .nav-sub{ max-height:160px; opacity:1; margin-top:6px; }
 
-/* 서브 링크 */
 .nav-sublink{
   display:block; color:rgba(255,255,255,.95);
   padding:10px 12px 10px 20px; border-radius:10px; text-decoration:none;
